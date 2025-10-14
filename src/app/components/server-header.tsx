@@ -28,7 +28,7 @@ interface ServerHeaderProps {
 export const ServerHeader = ({ server, role }: ServerHeaderProps) => {
   const isAdmin = role === "ADMIN";
   const isModerator = isAdmin || role === "MODERATOR";
-  const {onOpen}=useModal()
+  const { onOpen } = useModal();
 
   return (
     <DropdownMenu>
@@ -40,19 +40,28 @@ export const ServerHeader = ({ server, role }: ServerHeaderProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 text-xs font-medium text-black dark:text-neutral-400 space-y-[2px]">
         {isModerator && (
-          <DropdownMenuItem className="text-indigo-600 dark:text-indigo-400 px-3 py-2 text-sm cursor-pointer flex items-center" onClick={()=>onOpen("invite",{server})}>
+          <DropdownMenuItem
+            className="text-indigo-600 dark:text-indigo-400 px-3 py-2 text-sm cursor-pointer flex items-center"
+            onClick={() => onOpen("invite", { server })}
+          >
             Invite People
             <UserPlus className="h-4 w-4 ml-auto " />
           </DropdownMenuItem>
         )}
         {isAdmin && (
-          <DropdownMenuItem className=" px-3 py-2 text-sm cursor-pointer flex items-center">
+          <DropdownMenuItem
+            className=" px-3 py-2 text-sm cursor-pointer flex items-center"
+            onClick={() => onOpen("editServer", { server })}
+          >
             Server Settings
             <Settings className="h-4 w-4 ml-auto " />
           </DropdownMenuItem>
         )}
         {isAdmin && (
-          <DropdownMenuItem className=" px-3 py-2 text-sm cursor-pointer flex items-center">
+          <DropdownMenuItem
+            className=" px-3 py-2 text-sm cursor-pointer flex items-center"
+            onClick={() => onOpen("members", { server })}
+          >
             Manage Members
             <Users className="h-4 w-4 ml-auto " />
           </DropdownMenuItem>

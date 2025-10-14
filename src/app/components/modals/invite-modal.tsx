@@ -14,18 +14,18 @@ import { Check, Copy, RefreshCw } from "lucide-react";
 import { useOrigin } from "../../../../hooks/use-origin";
 import { useState } from "react";
 import axios from "axios";
+import { Server } from "../../../../db/schema";
 
 export default function InviteModal() {
   const { onOpen, onClose, type, data, isOpen } = useModal();
   const origin = useOrigin();
-
-  const { server } = data;
-  const inviteUrl = `${origin}/invite/${server?.inviteCode}`;
+  const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isOpenModal = isOpen && type === "invite";
 
-  const [copied, setCopied] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { server } = data;
+  const inviteUrl = `${origin}/invite/${server?.inviteCode}`;
 
   const onCopy = () => {
     navigator.clipboard.writeText(inviteUrl);
@@ -41,7 +41,6 @@ export default function InviteModal() {
       const response = await axios.patch(
         `/api/servers/${server?.id}/invite-code`
       );
-      console.log(response.data);
       onOpen("invite", { server: response.data });
     } catch (error) {
       console.error(error);
@@ -58,36 +57,32 @@ export default function InviteModal() {
             <DialogTitle className="text-2xl text-center font-bold">
               Invite Friends
             </DialogTitle>
-            <div className="pl-6">
-              <Label className="uppercase text-sm font-bold text-zinc-500 dark:text-secondary/70">
-                Server Invite Link
-              </Label>
-              <div className="flex items-center mt-2 gap-x-2 mb-2">
-                <Input
-                  className="dark:bg-zinc-200 bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
-                  value={inviteUrl}
-                  readOnly
-                  disabled={isLoading}
-                />
-                <Button
-                  size="icon"
-                  onClick={() => onCopy()}
-                  disabled={isLoading}
-                >
-                  {copied ? <Check /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-              <Button
-                variant={"link"}
-                className="text-xs text-zinc-500"
+          </DialogHeader>
+          <div className="pl-6">
+            <Label className="uppercase text-sm font-bold text-zinc-500 dark:text-secondary/70">
+              Server Invite Link
+            </Label>
+            <div className="flex items-center mt-2 gap-x-2 mb-2">
+              <Input
+                className="dark:bg-zinc-200 bg-zinc-200 border-0 focus-visible:ring-0 text-black focus-visible:ring-offset-0"
+                value={inviteUrl}
+                readOnly
                 disabled={isLoading}
-                onClick={onNew}
-              >
-                Generate a new link
-                <RefreshCw className="w-4 h-4 mr-2" />
+              />
+              <Button size="icon" onClick={() => onCopy()} disabled={isLoading}>
+                {copied ? <Check /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
-          </DialogHeader>
+            <Button
+              variant={"link"}
+              className="text-xs text-zinc-500"
+              disabled={isLoading}
+              onClick={onNew}
+            >
+              Generate a new link
+              <RefreshCw className="w-4 h-4 mr-2" />
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
