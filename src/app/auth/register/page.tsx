@@ -44,7 +44,7 @@ export default function Register() {
         password: data.password,
         name: data.email.split("@")[0],
       });
-      router.push("/");
+      router.push("/me");
     } catch (error) {
       console.error(error);
     } finally {
