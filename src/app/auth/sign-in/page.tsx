@@ -33,7 +33,7 @@ export default function SignIn() {
   // Check if user is already logged in
   useEffect(() => {
     if (user) {
-      router.push("/");
+      router.push("/me");
     }
   }, [user, router]);
 
@@ -52,7 +52,7 @@ export default function SignIn() {
         email: data.email,
         password: data.password,
       });
-      router.push("/");
+      router.push("/me");
     } catch (error) {
       console.error(error);
     } finally {
@@ -64,7 +64,7 @@ export default function SignIn() {
     setLoading(true);
     try {
       await signIn.social({ provider: "google" });
-      router.push("/main");
+      router.push("/me");
     } catch (error) {
       console.error(error);
     } finally {
