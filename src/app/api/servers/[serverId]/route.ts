@@ -4,6 +4,31 @@ import db from "../../../../../db/drizzle";
 import { servers } from "../../../../../db/schema";
 import { and, eq } from "drizzle-orm";
 
+export async function DELETE(
+  req: Request,
+  { params }: { params: { serverId: string } }
+) {
+  try {
+    const { serverId } = await params;
+    const profile = await getSession();
+
+    if (!profile) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const server = await db
+      .delete(servers)
+      .where(
+        and(eq(servers.id, serverId), eq(servers.userId, profile.id))
+      )
+      .returning();
+
+    return NextResponse.json(server);
+  } catch (error) {
+    console.error("[SERVER_ID_DELETE]", error);
+    return new NextResponse("Internal server error", { status: 500 });
+  }
+}
 export async function PATCH(
   req: Request,
   { params }: { params: { serverId: string } }
@@ -25,9 +50,7 @@ export async function PATCH(
         imageUrl,
         updatedAt: new Date(),
       })
-      .where(
-        and(eq(servers.id,serverId), eq(servers.userId, profile.id))
-      )
+      .where(and(eq(servers.id, serverId), eq(servers.userId, profile.id)))
       .returning();
 
     return NextResponse.json(server);
