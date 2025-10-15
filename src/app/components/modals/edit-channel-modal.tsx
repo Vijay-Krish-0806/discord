@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import z from "zod";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useModal } from "../../../../hooks/use-modal-store";
 import { channelTypeEnum } from "../../../../db/schema";
@@ -47,20 +47,12 @@ const formSchema = z.object({
   type: z.enum(channelTypeEnum.enumValues),
 });
 
-export default function CreateChannelModal() {
+export default function EditChannelModal() {
   const router = useRouter();
   const { isOpen, onClose, type, data } = useModal();
-  const params = useParams();
 
-  const isOpenModal = isOpen && type === "createChannel";
-  const { channelType } = data;
-
-  useEffect(() => {
-    if (channelType) {
-      console.log("channelType", channelType);
-      form.setValue("type", channelType);
-    }
-  }, [channelType]);
+  const isOpenModal = isOpen && type === "editChannel";
+  const { channel, server } = data;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -69,16 +61,23 @@ export default function CreateChannelModal() {
       type: channelTypeEnum.enumValues[0],
     },
   });
+
+  useEffect(() => {
+    if (channel) {
+      form.setValue("name", channel.name);
+      form.setValue("type", channel.type);
+    }
+  }, [form, channel]);
   const isLoading = form.formState.isSubmitting;
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       const url = qs.stringifyUrl({
-        url: "/api/channels",
+        url: `/api/channels/${channel?.id}`,
         query: {
-          serverId: params.serverId,
+          serverId: server?.id,
         },
       });
-      await axios.post(url, values);
+      await axios.patch(url, values);
       form.reset();
       router.refresh();
       onClose();
@@ -98,7 +97,7 @@ export default function CreateChannelModal() {
         <DialogContent className="bg-white text-black p-0 overflow-hidden">
           <DialogHeader className="pt-6 px-2">
             <DialogTitle className="text-2xl text-center font-bold">
-              Create Channel
+              Edit Channel
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
