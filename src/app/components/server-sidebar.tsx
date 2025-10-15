@@ -2,9 +2,23 @@ import { redirect } from "next/navigation";
 import { getSession } from "../../../lib/auth-utils";
 import db from "../../../db/drizzle";
 import { ServerHeader } from "./server-header";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { SearchServer } from "./server-search";
+import { channelTypeEnum, memberRoleEnum } from "../../../db/schema";
+import { Hash, Mic, ShieldAlert, ShieldCheck, Video } from "lucide-react";
 
 interface ServerSidebarProps {
   serverId: string;
+}
+const iconMap={
+  [channelTypeEnum.enumValues[0]]:<Hash className="mr-2 h-4 w-4"/>,
+  [channelTypeEnum.enumValues[1]]:<Mic className="mr-2 h-4 w-4"/>,
+  [channelTypeEnum.enumValues[2]]:<Video className="mr-2 h-4 w-4"/>
+}
+const roleIconMap={
+  [memberRoleEnum.enumValues[2]]:null,
+  [memberRoleEnum.enumValues[1]]:<ShieldCheck className="mr-2 h-4 w-4 text-indigo-500"/>,
+  [memberRoleEnum.enumValues[0]]:<ShieldAlert className="mr-2 h-4 w-4 text-rose-500"/>
 }
 export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
   const profile = await getSession();
@@ -27,7 +41,6 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
   });
 
 
-  //   console.log(server)
   const textChannels = server?.channels.filter(
     (channel) => channel.type === "TEXT"
   );
@@ -38,7 +51,7 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
     (channel) => channel.type === "VIDEO"
   );
 
-  const memebers = server?.members.filter(
+  const members = server?.members.filter(
     (member) => member.userId != profile.id
   );
 
@@ -54,9 +67,49 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
     <div className="flex flex-col h-full text-primary w-full dark:bg-[#2B2D31] bg-[#F2F3F5]">
     <ServerHeader
     server={server}
-    role={role}
-
-    />
+    role={role}/>
+    <ScrollArea className="flex-1 px-3">
+      <div className="mt-2">
+        <SearchServer data={[
+          { 
+            label:"Text Channels",
+            type:"channel",
+            data:textChannels?.map((channel)=>({
+              id:channel.id,
+              name:channel.name,
+              icon:iconMap[channel.type],
+            }))
+          },
+          { 
+            label:"Voice Channels",
+            type:"channel",
+            data:audioChannels?.map((channel)=>({
+              id:channel.id,
+              name:channel.name,
+              icon:iconMap[channel.type],
+            }))
+          },
+          { 
+            label:"Video Channels",
+            type:"channel",
+            data:videoChannels?.map((channel)=>({
+              id:channel.id,
+              name:channel.name,
+              icon:iconMap[channel.type],
+            }))
+          },
+          { 
+            label:"Members",
+            type:"member",
+            data:members?.map((member)=>({
+              id:member.id,
+              name:member.user.name!,
+              icon:roleIconMap[member.role],
+            }))
+          }
+        ]}/>
+      </div>
+    </ScrollArea>
     </div>
   );
 };

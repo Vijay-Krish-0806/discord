@@ -8,21 +8,14 @@ import {
 } from "@/components/ui/dialog";
 
 import { useModal } from "../../../../hooks/use-modal-store";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, RefreshCw } from "lucide-react";
-import { useOrigin } from "../../../../hooks/use-origin";
 import { useState } from "react";
 import axios from "axios";
-import { Server } from "../../../../db/schema";
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { set } from "zod";
 import { useRouter } from "next/navigation";
 
 export default function DeleteServerModal() {
-  const { onOpen, onClose, type, data, isOpen } = useModal();
-  const [copied, setCopied] = useState(false);
+  const {  onClose, type, data, isOpen } = useModal();
   const [isLoading, setIsLoading] = useState(false);
 
   const isOpenModal = isOpen && type === "deleteServer";
@@ -51,7 +44,7 @@ export default function DeleteServerModal() {
               Delete Server
             </DialogTitle>
             <DialogDescription className="text-center text-zinc-500">
-              Are you sure you want to do this? <span className="font-semibold text-indigo-500">{server?.name}</span>will be permenantly deleted.
+              Are you sure you want to do this? <span className="font-semibold text-rose-500">{server?.name}</span> will be permenantly deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="bg-gray-100 px-6 py-4">
