@@ -6,6 +6,7 @@ import {
   index,
   unique,
   pgEnum,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -105,6 +106,88 @@ export const channels = pgTable(
   ]
 );
 
+//-------MESSAGES-------
+export const messages = pgTable(
+  "messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    content: text("content").notNull(),
+    fileUrl: text("file_url"),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    channelId: text("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    deleted: boolean("deleted").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("messages_channel_id_idx").on(table.channelId),
+    index("messages_member_id_idx").on(table.memberId),
+  ]
+);
+
+//-----------CONVERSATIONS--------------//
+
+export const conversations = pgTable(
+  "conversations",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    memberOneId: text("member_one_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    memberTwoId: text("member_two_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("conversations_member_one_id_idx").on(table.memberOneId),
+    index("conversations_member_two_id_idx").on(table.memberTwoId),
+    unique("conversations_members_unique").on(
+      table.memberOneId,
+      table.memberTwoId
+    ),
+  ]
+);
+
+export const directMessages = pgTable(
+  "direct_messages",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    content: text("content").notNull(),
+    fileUrl: text("file_url"),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    deleted: boolean("deleted").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("direct_messages_member_id_idx").on(table.memberId),
+    index("direct_messages_conversation_id_idx").on(table.conversationId),
+  ]
+);
+
 // ---------- SESSIONS ----------
 export const sessions = pgTable(
   "sessions",
@@ -172,19 +255,63 @@ export const serversRelations = relations(servers, ({ one, many }) => ({
   channels: many(channels),
 }));
 
-export const membersRelations = relations(members, ({ one }) => ({
+export const membersRelations = relations(members, ({ one, many }) => ({
   user: one(users, { fields: [members.userId], references: [users.id] }),
   server: one(servers, {
     fields: [members.serverId],
     references: [servers.id],
   }),
+  messages: many(messages),
+  directMessages: many(directMessages),
+  conversationsInitiated: many(conversations, { relationName: "MemberOne" }),
+  conversationsReceived: many(conversations, { relationName: "MemberTwo" }),
 }));
 
-export const channelsRelations = relations(channels, ({ one }) => ({
+export const channelsRelations = relations(channels, ({ one, many }) => ({
   user: one(users, { fields: [channels.userId], references: [users.id] }),
   server: one(servers, {
     fields: [channels.serverId],
     references: [servers.id],
+  }),
+  messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  member: one(members, {
+    fields: [messages.memberId],
+    references: [members.id],
+  }),
+  channel: one(channels, {
+    fields: [messages.channelId],
+    references: [channels.id],
+  }),
+}));
+
+export const conversationsRelations = relations(
+  conversations,
+  ({ one, many }) => ({
+    memberOne: one(members, {
+      fields: [conversations.memberOneId],
+      references: [members.id],
+      relationName: "MemberOne",
+    }),
+    memberTwo: one(members, {
+      fields: [conversations.memberTwoId],
+      references: [members.id],
+      relationName: "MemberTwo",
+    }),
+    directMessages: many(directMessages),
+  })
+);
+
+export const directMessagesRelations = relations(directMessages, ({ one }) => ({
+  member: one(members, {
+    fields: [directMessages.memberId],
+    references: [members.id],
+  }),
+  conversation: one(conversations, {
+    fields: [directMessages.conversationId],
+    references: [conversations.id],
   }),
 }));
 
@@ -209,6 +336,12 @@ export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+export type Conversation = typeof conversations.$inferSelect;
+export type NewConversation = typeof conversations.$inferInsert;
+export type DirectMessage = typeof directMessages.$inferSelect;
+export type NewDirectMessage = typeof directMessages.$inferInsert;
 
 // Enum value types for TypeScript
 export type MemberRole = (typeof memberRoleEnum.enumValues)[number];
