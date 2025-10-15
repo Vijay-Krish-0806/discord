@@ -18,7 +18,7 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
       return redirect("/auth/sign-in");
     }
     if (!inviteCode) {
-      return redirect("/");
+      return redirect("/me");
     }
 
     // First, find the server by invite code
@@ -38,7 +38,7 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
 
     // If user is already a member, redirect to the server
     if (existingMember) {
-      return redirect(`/servers/${server.id}`);
+      return redirect(`/me/servers/${server.id}`);
     }
 
     // If not a member, create new member
@@ -52,10 +52,10 @@ const InviteCodePage = async ({ params }: InviteCodePageProps) => {
     });
 
     // Redirect to the server after successful join
-    return redirect(`/servers/${server.id}`);
+    return redirect(`/me/servers/${server.id}`);
   } catch (error) {
     console.error("Error in invite code page:", error);
-    return redirect("/");
+    return redirect("/me");
   }
   
 };

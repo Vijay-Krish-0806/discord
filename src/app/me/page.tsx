@@ -15,7 +15,7 @@ const Page = async () => {
   const server = await getServer(user.id);
 
   if (server) {
-    return redirect(`/servers/${server.id}`);
+    return redirect(`/me/servers/${server.id}`);
   }
   return <InitialModal />;
 };
