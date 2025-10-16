@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "../../../../../../../../lib/auth-utils";
 import db from "../../../../../../../../db/drizzle";
 import { ChatHeader } from "@/app/components/chat/chat-header";
+import { ChatInput } from "@/app/components/chat/chat-input";
 
 interface ChannelIdPageProps {
   params: {
@@ -30,6 +31,10 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
         serverId={channel.serverId}
         type="channel"
       />
+      <div className="flex-1">Future message</div>
+      <ChatInput name={channel.name} type="channel" apiUrl="/api/socket/messages" query={{
+        channelId:channel.id,
+        serverId:channel.serverId}} />
     </div>
   );
 }
