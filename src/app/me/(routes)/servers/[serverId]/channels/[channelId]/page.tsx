@@ -30,6 +30,14 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
         serverId={channel.serverId}
         type="channel"
       />
+      <div className="flex-1 overflow-auto">Future messages</div>
+      <div className="p-4 border-t border-rose-500">
+        <input
+          type="text"
+          className="w-full p-2 border rounded-md"
+          placeholder="Type a message..."
+        />
+      </div>
     </div>
   );
 }

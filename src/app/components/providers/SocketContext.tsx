@@ -33,6 +33,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000";
 
     const socketInstance: SocketType = io(socketUrl, {
+      withCredentials: true,
       autoConnect: true,
     });
 
