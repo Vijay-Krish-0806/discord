@@ -35,10 +35,14 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
       <ChatInput
         name={channel.name}
         type="channel"
-        apiUrl="/api/socket/messages"
+        apiUrl={
+          `${process.env.NEXT_PUBLIC_SOCKET_URL}/api/messages` ||
+          "http://localhost:4000/api/messages"
+        }
         query={{
           channelId: channel.id,
           serverId: channel.serverId,
+          profileId:profile.id
         }}
       />
     </div>
