@@ -10,17 +10,22 @@ import qs from "query-string";
 import axios from "axios";
 import { useModal } from "../../../../hooks/use-modal-store";
 
+import { EmojiPicker } from "../emoji-picker";
+import { useRouter } from "next/navigation";
+
 interface ChatInputProps {
   apiUrl: string;
   query: Record<string, any>;
   name: string;
   type: "conversation" | "channel";
 }
+
 const formSchema = z.object({
   content: z.string().min(1),
 });
 export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
   const { onOpen } = useModal();
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { content: "" },
@@ -32,8 +37,9 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
         url: apiUrl,
         query,
       });
-      console.log(value,url);
       await axios.post(url, value);
+      form.reset();
+      router.refresh();
     } catch (error) {
       console.log(error);
     }
@@ -64,7 +70,11 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
                     {...field}
                   />
                   <div className="absolute top-7 right-8">
-                    <Smile />
+                    <EmojiPicker
+                      onChange={(emoji: string) =>
+                        field.onChange(`${field.value} ${emoji}`)
+                      }
+                    />
                   </div>
                 </div>
               </FormControl>
