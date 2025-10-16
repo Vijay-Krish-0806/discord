@@ -11,21 +11,22 @@ interface ServerMemberProps {
   server: Server;
 }
 
-const roleIconMap = {
+export const roleIconMap = {
   GUEST: null,
   MODERATOR: <ShieldCheck className="h-4 w-4 ml-2 text-indigo-500" />,
-  ADMIN: <ShieldAlert className="h-4 w-4 text-rose-500" />,
+  ADMIN: <ShieldAlert className="h-4 w-4 ml-2 text-rose-500" />,
 };
 
 export const ServerMember = ({ member, server }: ServerMemberProps) => {
   const params = useParams();
   const router = useRouter();
   const icon = roleIconMap[member.role];
-  const onClick=()=>{
+  const onClick = () => {
     router.push(`/me/servers/${params?.serverId}/conversations/${member.id}`);
-  }
+  };
   return (
-    <button onClick={onClick}
+    <button
+      onClick={onClick}
       className={cn(
         "group px-2 py-2 rounded-md flex items-center gap-x-2 w-full hover:bg-zinc-700/10 dark:hover:bg-zinc-700/50 transition mb-1",
         params?.memberId === member.id && "bg-zinc-700/20 dark:bg-zinc-700"

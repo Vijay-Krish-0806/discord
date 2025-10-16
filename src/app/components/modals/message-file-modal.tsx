@@ -9,12 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { useForm } from "react-hook-form";
@@ -31,29 +26,31 @@ const formSchema = z.object({
 
 export default function MessageFileModal() {
   const router = useRouter();
-  const {isOpen,onClose,type,data}=useModal();
-  const isModalOpen=isOpen && type==="messageFile";
-  const {apiUrl,query}=data;
+  const { isOpen, onClose, type, data } = useModal();
+  const isModalOpen = isOpen && type === "messageFile";
+  const { apiUrl, query } = data;
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       fileUrl: "",
     },
   });
-  const handleClose=()=>{
+  const handleClose = () => {
     form.reset();
     onClose();
-  }
+  };
   const isLoading = form.formState.isSubmitting;
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const url=qs.stringifyUrl({
-        url:apiUrl || "",
+      console.log("query", query);
+      const url = qs.stringifyUrl({
+        url: apiUrl || "",
         query,
-      })
+      });
+      console.log("url", url, "values", values);
       await axios.post(url, {
         ...values,
-        content:values.fileUrl,
+        content: values.fileUrl,
       });
       form.reset();
       router.refresh();

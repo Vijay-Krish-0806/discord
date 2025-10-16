@@ -23,8 +23,11 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
   const member = await db.query.members.findFirst({
     where: (members, { eq, and }) =>
       and(eq(members.serverId, serverId), eq(members.userId, profile.id)),
+    with: {
+      user: true,
+    },
   });
-  if (!channel || !member) redirect("/me");
+  if (!channel || !member) return redirect("/me");
   return (
     <div className="bg-white dark:bg-[#313338] flex flex-col h-full">
       <ChatHeader
@@ -38,8 +41,8 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
         member={member}
         name={channel.name}
         type="channel"
-        apiUrl="/api/messages"
-        socketUrl="/api/socket/messages"
+        apiUrl={`/api/messages`}
+        socketUrl={`${process.env.NEXT_PUBLIC_SOCKET_URL}/api/messages`}
         chatId={channel.id}
         socketQuery={{ channelId: channel.id, serverId: channel.serverId }}
         paramKey="channelId"
