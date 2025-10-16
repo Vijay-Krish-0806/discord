@@ -8,9 +8,11 @@ export default function RootLayout({
 }>) {
   return (
     <div className="h-full">
-      <Sidebar />
       <Navbar />
-      <main className="pl-18 pt-16 h-full">{children}</main>
+      <div className="hidden md:flex! h-full w-[72px] z-30 flex-col fixed inset-y-0">
+        <Sidebar/>
+      </div>
+      <main className="pl-0 md:pl-[72px] h-full">{children}</main>
     </div>
   );
 }
