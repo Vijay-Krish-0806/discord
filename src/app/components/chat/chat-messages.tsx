@@ -11,6 +11,7 @@ import { ChatItem } from "./chat-item";
 import { format } from "date-fns";
 import { useSocket } from "../providers/SocketContext";
 import { useChatScroll } from "../../../../hooks/use-chat-scroll";
+import { TypingIndicator } from "../typing-indicator";
 
 const DATE_FORMAT = "d MMM yyyy, HH:mm";
 
@@ -25,11 +26,13 @@ interface chatMessagesProps {
   paramValue: string;
   type: "channel" | "conversation";
 }
+
 type MessageWithMemberWithProfile = Message & {
   member: Member & {
     user: User;
   };
 };
+
 export const ChatMessages = ({
   name,
   member,
@@ -80,6 +83,7 @@ export const ChatMessages = ({
       </div>
     );
   }
+
   if (status === "error") {
     return (
       <div className="flex flex-col flex-1 justify-center items-center">
@@ -90,6 +94,7 @@ export const ChatMessages = ({
       </div>
     );
   }
+
   return (
     <div ref={chatRef} className="flex-1 flex flex-col py-4 overflow-y-auto">
       {!hasNextPage && <div className="flex-1" />}
@@ -98,7 +103,7 @@ export const ChatMessages = ({
       {hasNextPage && (
         <div className="flex justify-center">
           {isFetchingNextPage ? (
-            <Loader2 className="h-6 w-6 text-zinc-500 animate-spin- my-4" />
+            <Loader2 className="h-6 w-6 text-zinc-500 animate-spin my-4" />
           ) : (
             <button
               className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 text-xs my-4 dark:hover:text-zinc-300 transition"
@@ -131,6 +136,10 @@ export const ChatMessages = ({
           </Fragment>
         ))}
       </div>
+
+      {/* Typing Indicator - Shows before the bottom ref */}
+      <TypingIndicator roomId={chatId} />
+
       <div ref={bottomRef} />
     </div>
   );

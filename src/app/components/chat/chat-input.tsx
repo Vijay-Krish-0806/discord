@@ -3,34 +3,71 @@
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Smile } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import qs from "query-string";
 import axios from "axios";
 import { useModal } from "../../../../hooks/use-modal-store";
-
 import { EmojiPicker } from "../emoji-picker";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useTypingIndicator } from "../../../../hooks/use-chat-typing";
 
 interface ChatInputProps {
   apiUrl: string;
   query: Record<string, any>;
   name: string;
   type: "conversation" | "channel";
+  roomId?: string;
 }
 
 const formSchema = z.object({
   content: z.string().min(1),
 });
-export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
+
+export const ChatInput = ({
+  apiUrl,
+  query,
+  name,
+  type,
+  roomId,
+}: ChatInputProps) => {
   const { onOpen } = useModal();
   const router = useRouter();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { emitTyping } = useTypingIndicator({
+    roomId: roomId || query.channelId || query.conversationId || "",
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { content: "" },
   });
+
   const isLoading = form.formState.isSubmitting;
+
+  // Handle typing - emit typing event with throttle
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: any
+  ) => {
+    field.onChange(e);
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Emit typing event
+    emitTyping();
+
+    // Stop emitting typing after 1 second of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      // Typing indicator will auto-clear after timeout in the hook
+    }, 1000);
+  };
+
   const onSubmit = async (value: z.infer<typeof formSchema>) => {
     try {
       const url = qs.stringifyUrl({
@@ -41,10 +78,24 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
       await axios.post(url, value);
       form.reset();
       router.refresh();
+
+      // Clear typing indicator when message is sent
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     } catch (error) {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -69,6 +120,7 @@ export const ChatInput = ({ apiUrl, query, name, type }: ChatInputProps) => {
                       type === "conversation" ? name : "#" + name
                     }`}
                     {...field}
+                    onChange={(e) => handleInputChange(e, field)}
                   />
                   <div className="absolute top-7 right-8">
                     <EmojiPicker
