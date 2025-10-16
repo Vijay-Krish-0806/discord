@@ -35,7 +35,7 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
         serverId={channel.serverId}
         type="channel"
       />
-      <div className="flex-1">Future message</div>
+      <div className="flex-1" />
 
       <ChatMessages
         member={member}
@@ -44,7 +44,11 @@ export default async function ChannelIdPage({ params }: ChannelIdPageProps) {
         apiUrl={`/api/messages`}
         socketUrl={`${process.env.NEXT_PUBLIC_SOCKET_URL}/api/messages`}
         chatId={channel.id}
-        socketQuery={{ channelId: channel.id, serverId: channel.serverId }}
+        socketQuery={{
+          channelId: channel.id,
+          serverId: channel.serverId,
+          profileId: profile.id,
+        }}
         paramKey="channelId"
         paramValue={channel.id}
       />

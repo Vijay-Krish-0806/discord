@@ -3,11 +3,14 @@
 import { Loader2, ServerCrash } from "lucide-react";
 import { Member, Message, User } from "../../../../db/schema";
 import { useChatQuery } from "../../../../hooks/use-chat-query";
+import { useChatSocket } from "../../../../hooks/use-chat-socket";
 import { ChatWelcome } from "./chat-welcome";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, ComponentRef } from "react";
 import { ChatItem } from "./chat-item";
 
 import { format } from "date-fns";
+import { useSocket } from "../providers/SocketContext";
+import { useChatScroll } from "../../../../hooks/use-chat-scroll";
 
 const DATE_FORMAT = "d MMM yyyy, HH:mm";
 
@@ -39,8 +42,34 @@ export const ChatMessages = ({
   type,
 }: chatMessagesProps) => {
   const queryKey = `chat:${chatId}`;
+  const addKey = `chat:${chatId}:messages`;
+  const updateKey = `chat:${chatId}:messages:update`;
+
+  const chatRef = useRef<ComponentRef<"div">>(null);
+  const bottomRef = useRef<ComponentRef<"div">>(null);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useChatQuery({ queryKey, apiUrl, paramKey, paramValue });
+  useChatSocket({ queryKey, addKey, updateKey });
+  useChatScroll({
+    chatRef,
+    bottomRef,
+    loadMore: fetchNextPage,
+    shouldLoadMore: !isFetchingNextPage && !!hasNextPage,
+    count: data?.pages?.[0]?.items?.length ?? 0,
+  });
+
+  const { socket } = useSocket();
+  useEffect(() => {
+    if (socket) {
+      socket.emit("joinRoom", chatId);
+      console.log(`📍 Joined room: ${chatId}`);
+
+      return () => {
+        socket.emit("leaveRoom", chatId);
+      };
+    }
+  }, [socket, chatId]);
+
   if (status === "pending") {
     return (
       <div className="flex flex-col flex-1 justify-center items-center">
@@ -62,31 +91,47 @@ export const ChatMessages = ({
     );
   }
   return (
-    <div className="flex-1 flex flex-col py-4 overflow-y-auto">
-      <div className="flex-1">
-        <ChatWelcome type={type} name={name} />
-        <div className="flex flex-col-reverse mt-auto">
-          {data?.pages?.map((group, i) => (
-            <Fragment key={i}>
-              {group?.items?.map((message: MessageWithMemberWithProfile) => (
-                <ChatItem
-                  id={message.id}
-                  currentMember={member}
-                  member={message.member}
-                  key={message.id}
-                  content={message.content}
-                  fileUrl={message.fileUrl}
-                  deleted={message.deleted as boolean}
-                  timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
-                  isUpdated={message.updatedAt !== message.createdAt}
-                  socketUrl={socketUrl}
-                  socketQuery={socketQuery}
-                />
-              ))}
-            </Fragment>
-          ))}
+    <div ref={chatRef} className="flex-1 flex flex-col py-4 overflow-y-auto">
+      {!hasNextPage && <div className="flex-1" />}
+      {!hasNextPage && <ChatWelcome type={type} name={name} />}
+
+      {hasNextPage && (
+        <div className="flex justify-center">
+          {isFetchingNextPage ? (
+            <Loader2 className="h-6 w-6 text-zinc-500 animate-spin- my-4" />
+          ) : (
+            <button
+              className="text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 text-xs my-4 dark:hover:text-zinc-300 transition"
+              onClick={() => fetchNextPage()}
+            >
+              Load Previous messages
+            </button>
+          )}
         </div>
+      )}
+
+      <div className="flex flex-col-reverse mt-auto">
+        {data?.pages?.map((group, i) => (
+          <Fragment key={i}>
+            {group?.items?.map((message: MessageWithMemberWithProfile) => (
+              <ChatItem
+                id={message.id}
+                currentMember={member}
+                member={message.member}
+                key={message.id}
+                content={message.content}
+                fileUrl={message.fileUrl}
+                deleted={message.deleted as boolean}
+                timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
+                isUpdated={message.updatedAt !== message.createdAt}
+                socketUrl={socketUrl}
+                socketQuery={socketQuery}
+              />
+            ))}
+          </Fragment>
+        ))}
       </div>
+      <div ref={bottomRef} />
     </div>
   );
 };
