@@ -1,5 +1,5 @@
 {
-  "name": "discord-clone",
+  "name": "discord",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -39,10 +39,12 @@
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
     "shadcn": "^3.4.0",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.1",
     "uploadthing": "^7.7.4",
     "uuid": "^13.0.0",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "shared": "workspace:*"
   },
   "devDependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -1,4 +1,6 @@
-import { Server, Member, Channel, User } from "../db/schema";
+import { Server, Member, Channel, User } from "./apps/discord/db/schema";
+
+
 
 export type ServerWithMembersWithProfiles = Server & {
   members: (Member & {
@@ -6,3 +8,4 @@ export type ServerWithMembersWithProfiles = Server & {
   })[];
   channels: Channel[];
 };
+

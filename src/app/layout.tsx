@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/app/components/providers/theme-provider";
 import { cn } from "@/lib/utils";
 import { ModalProvider } from "./components/providers/modal-provider";
+import { SocketProvider } from "@/app/components/providers/SocketContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,8 +40,10 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <ModalProvider />
-          {children}
+          <SocketProvider>
+            <ModalProvider />
+            {children}
+          </SocketProvider>
         </ThemeProvider>
       </body>
     </html>
