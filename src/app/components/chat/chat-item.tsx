@@ -1,12 +1,13 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { redirect, useParams, useRouter } from "next/navigation";
 import { Member, User } from "../../../../db/schema";
 import ActionTooltip from "../action-tooltip";
 import { roleIconMap } from "../server-member";
 import UserAvatar from "../user-avatar";
 import Image from "next/image";
-import { Edit, FileIcon, Trash } from "lucide-react";
+import { Edit, FileIcon, Plus, Trash } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import z from "zod";
@@ -18,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useModal } from "../../../../hooks/use-modal-store";
+import Picker, { EmojiClickData as EmojiData, Theme } from "emoji-picker-react";
+import { EmojiPicker } from "../emoji-picker";
 
 interface ChatItemProps {
   id: string;
@@ -32,6 +35,8 @@ interface ChatItemProps {
   member?: Member & {
     user: User;
   };
+  reactions?: string[];
+  showAvatar?: boolean;
 }
 
 const formSchema = z.object({
@@ -49,48 +54,40 @@ export const ChatItem = ({
   isUpdated,
   socketUrl,
   socketQuery,
+  reactions = [],
+  showAvatar = true,
 }: ChatItemProps) => {
   if (!member) {
     return redirect("/me");
   }
-  const [isEditing, setIsEditing] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
   const params = useParams();
   const router = useRouter();
-
   const { onOpen } = useModal();
+  const queryClient = useQueryClient();
 
   const onMemberClick = () => {
-    if (member.id === currentMember.id) {
-      return;
-    }
+    if (member.id === currentMember.id) return;
     router.push(`/me/servers/${params?.serverId}/conversations/${member.id}`);
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      content: content,
-    },
+    defaultValues: { content },
   });
 
   useEffect(() => {
-    form.reset({
-      content: content,
-    });
+    form.reset({ content });
   }, [content]);
 
   useEffect(() => {
-    const handleKeyDown = (event: any) => {
-      if (event.key === "Escape" || event.keyCode === 27) {
-        setIsEditing(false);
-      }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsEditing(false);
     };
-
     window.addEventListener("keydown", handleKeyDown);
-
     return () => window.removeEventListener("keydown", handleKeyDown);
-  });
+  }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -98,7 +95,6 @@ export const ChatItem = ({
         url: `${socketUrl}/${id}`,
         query: socketQuery,
       });
-
       await axios.patch(url, values);
       form.reset();
       setIsEditing(false);
@@ -108,148 +104,224 @@ export const ChatItem = ({
   };
 
   const fileType = fileUrl?.split(".").pop();
-
   const isAdmin = currentMember.role === "ADMIN";
   const isModerator = currentMember.role === "MODERATOR";
   const isOwner = currentMember.id === member.id;
   const canDeleteMessage = !deleted && (isAdmin || isModerator || isOwner);
   const canEditMessage = !deleted && isOwner;
-
   const isLoading = form.formState.isSubmitting;
-
   const isPdf = fileType === "pdf" && fileUrl;
   const isImage = !isPdf && fileUrl;
+  const isOwnMessage = member.id === currentMember.id;
+
+  const handleReact = async (emoji: string) => {
+    const chatId = params.channelId || params.conversationId;
+
+    if (!chatId) return;
+    try {
+      await axios.post(`/api/messages/${id}/reaction`, { emoji });
+      queryClient.invalidateQueries({ queryKey: [`chat:${chatId}`] });
+    } catch (err) {
+      console.error("Failed to react", err);
+    }
+  };
+
+  const commonEmojis = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+
   return (
-    <div className="relative group flex items-center hover:bg-black/5 p-4 transition w-full">
-      <div className="group flex gap-x-2 items-start w-full">
+    <div
+      className={cn("flex w-full py-1 p-4", {
+        "justify-end": isOwnMessage,
+        "justify-start": !isOwnMessage,
+      })}
+    >
+      {!isOwnMessage && showAvatar && (
         <div
           onClick={onMemberClick}
-          className="cursor-pointer hover:drop-shadow-md transition"
+          className="cursor-pointer hover:drop-shadow-md transition mr-2 mt-auto"
         >
-          <UserAvatar src={member?.user?.imageUrl || ""} />
+          <UserAvatar src={member.user.imageUrl || ""} />
         </div>
-        <div className="flex flex-col w-full">
-          <div className="flex items-center gap-x-2">
-            <div className="flex items-center">
-              <p
-                onClick={onMemberClick}
-                className="font-semibold text-sm hover:underline cursor-pointer"
-              >
-                {member?.user?.name}
-              </p>
-              <ActionTooltip label={member?.role}>
-                {roleIconMap[member?.role]}
-              </ActionTooltip>
-            </div>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {timestamp}
-            </span>
-          </div>
-          {isImage && (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative aspect-square rounded-md mt-2 overflow-hidden border flex items-center bg-secondary h-48 w-48"
-            >
-              <Image
-                src={fileUrl}
-                alt={content}
-                fill
-                className="object-cover"
-              />
-            </a>
-          )}
+      )}
 
-          {isPdf && (
-            <div className="relative flex items-center p-2 mt-2 rounded-md bg-background/10">
-              <FileIcon className="h-10 w-10 fill-indogo-200 stroke-indogo-400" />
+      <div
+        className={cn("flex flex-col", {
+          "items-end": isOwnMessage,
+          "items-start": !isOwnMessage,
+        })}
+      >
+        {!isOwnMessage && showAvatar && (
+          <div className="flex items-center gap-x-2 mb-1">
+            <p className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">
+              {member.user.name}
+            </p>
+            <ActionTooltip label={member.role}>
+              {roleIconMap[member.role]}
+            </ActionTooltip>
+          </div>
+        )}
+        <div className="relative group">
+          <div className={cn("flex flex-col gap-y-1 rounded-lg max-w-[100%]")}>
+            {isImage && (
               <a
                 href={fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-2 text-sm text-indigo-500 dark:text-indigo-400 hover:underline"
+                className="relative aspect-square rounded-md mt-2 overflow-hidden border flex items-center bg-secondary h-48 w-48"
               >
-                PDF file
+                <Image
+                  src={fileUrl}
+                  alt={content}
+                  fill
+                  className="object-cover"
+                />
               </a>
-            </div>
-          )}
-          {!fileUrl && !isEditing && (
-            <p
-              className={cn(
-                "text-sm text-zinc-600 dark:text-zinc-300",
-                deleted &&
-                  "italic text-zinc-500 dark:text-zinc-400 text-xs mt-1"
-              )}
-            >
-              {content}
-              {isUpdated && !deleted && (
-                <span className="text-[10px] mx-2 text-zinc-500 dark:text-zinc-400">
-                  (edited)
+            )}
+
+            {isPdf && (
+              <div className="relative flex items-center p-2 mt-2 rounded-md bg-background/10">
+                <FileIcon className="h-10 w-10 fill-indigo-200 stroke-indigo-400" />
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-sm text-indigo-500 dark:text-indigo-400 hover:underline"
+                >
+                  PDF file
+                </a>
+              </div>
+            )}
+            {!fileUrl && !isEditing && (
+              <div className="flex items-end gap-x-2 p-3 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-none border rounded-md">
+                <p
+                  className={cn(
+                    "text-sm break-words",
+                    isOwnMessage
+                      ? "text-zinc-900"
+                      : "text-zinc-900 dark:text-zinc-100",
+                    deleted && "italic text-zinc-500 dark:text-zinc-400 text-xs"
+                  )}
+                >
+                  {content}
+                  {isUpdated && !deleted && (
+                    <span className="text-[10px] mx-1 text-zinc-500 dark:text-zinc-400">
+                      (edited)
+                    </span>
+                  )}
+                </p>
+                <span
+                  className={cn(
+                    "text-[10px] flex-shrink-0",
+                    isOwnMessage
+                      ? "text-zinc-900"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  )}
+                >
+                  {timestamp}
                 </span>
-              )}
-            </p>
-          )}
-          {!fileUrl && isEditing && (
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="flex items-center w-full gap-x-2 pt-2"
-              >
-                <FormField
-                  control={form.control}
-                  name="content"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <div className="relative w-full">
+              </div>
+            )}
+
+            {!fileUrl && isEditing && (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="p-3">
+                  <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
                           <Input
                             disabled={isLoading}
                             className="p-2 bg-zinc-200/90 dark:bg-zinc-700/75 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600 dark:text-zinc-200"
                             placeholder="Edited message"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex gap-x-2 mt-2">
+                    <Button disabled={isLoading} size="sm" variant="primary">
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            )}
+            {!deleted && reactions.length > 0 && (
+              <div className="flex px-3 pb-3 -mt-3 ">
+                {reactions.map((emoji, i) => (
+                  <span
+                    key={i}
+                    className="text-lg border blue-500 rounded-lg bg-white px-1 mx-1 shadow-sm z-10"
+                  >
+                    {emoji}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          {!deleted && (
+            <div
+              className={cn(
+                "absolute flex gap-1 bg-white dark:bg-zinc-800 border border-zinc-700 rounded-md p-1 shadow-sm z-10",
+                "opacity-0 group-hover:opacity-100 transition-opacity",
+                "-top-8"
+              )}
+            >
+              {commonEmojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReact(emoji);
+                  }}
+                  className="w-6 h-6 flex items-center justify-center text-lg rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                >
+                  {emoji}
+                </button>
+              ))}
+              <EmojiPicker
+                onChange={(emoji: string) => {
+                  handleReact(emoji);
+                }}
+              />
+            </div>
+          )}
+          {canDeleteMessage && (
+            <div className="hidden group-hover:flex items-center gap-x-2 absolute -top-2 right-0 bg-white dark:bg-zinc-800 border rounded-sm p-1">
+              {canEditMessage && (
+                <ActionTooltip label="Edit">
+                  <Edit
+                    className="cursor-pointer w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-300 transition"
+                    onClick={() => setIsEditing(true)}
+                  />
+                </ActionTooltip>
+              )}
+              <ActionTooltip label="Delete">
+                <Trash
+                  className="cursor-pointer w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-300 transition"
+                  onClick={() =>
+                    onOpen("deleteMessage", {
+                      apiUrl: `${socketUrl}/${id}`,
+                      query: socketQuery,
+                    })
+                  }
                 />
-                <Button disabled={isLoading} size="sm" variant={"primary"}>
-                  Save
-                </Button>
-              </form>
-              <span className="text-[10px] mt-1 text-zinc-400">
-                Press Esc to cancel and Enter to Save
-              </span>
-            </Form>
+              </ActionTooltip>
+            </div>
           )}
         </div>
       </div>
-
-      {canDeleteMessage && (
-        <div className="hidden group-hover:flex! items-center gap-x-2 absolute p-1 -top-2 right-5 bg-white dark:bg-zinc-800 border rounded-sm">
-          {canEditMessage && (
-            <ActionTooltip label="Edit">
-              <Edit
-                className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-300 transition"
-                onClick={() => setIsEditing(true)}
-              />
-            </ActionTooltip>
-          )}
-
-          <ActionTooltip label="Delete">
-            <Trash
-              className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 dark:text-zinc-300 transition"
-              onClick={() =>
-                onOpen("deleteMessage", {
-                  apiUrl: `${socketUrl}/${id}`,
-                  query: socketQuery,
-                })
-              }
-            />
-          </ActionTooltip>
-        </div>
-      )}
     </div>
   );
 };

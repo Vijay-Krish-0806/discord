@@ -65,8 +65,6 @@ export const ChatMessages = ({
   useEffect(() => {
     if (socket) {
       socket.emit("joinRoom", chatId);
-      console.log(`📍 Joined room: ${chatId}`);
-
       return () => {
         socket.emit("leaveRoom", chatId);
       };
@@ -124,20 +122,19 @@ export const ChatMessages = ({
                 currentMember={member}
                 member={message.member}
                 key={message.id}
+                timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
+                isUpdated={message.updatedAt !== message.createdAt}
                 content={message.content}
                 fileUrl={message.fileUrl}
                 deleted={message.deleted as boolean}
-                timestamp={format(new Date(message.createdAt), DATE_FORMAT)}
-                isUpdated={message.updatedAt !== message.createdAt}
                 socketUrl={socketUrl}
                 socketQuery={socketQuery}
+                reactions={message.reactions || []}
               />
             ))}
           </Fragment>
         ))}
       </div>
-
-      {/* Typing Indicator - Shows before the bottom ref */}
       <TypingIndicator roomId={chatId} />
 
       <div ref={bottomRef} />

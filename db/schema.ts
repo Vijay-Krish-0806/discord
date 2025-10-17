@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   imageUrl: text("image_url"),
+  // image:text("image"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -119,6 +120,7 @@ export const messages = pgTable(
     channelId: text("channel_id")
       .notNull()
       .references(() => channels.id, { onDelete: "cascade" }),
+      reactions: text("reactions").array().default([]),
     deleted: boolean("deleted").default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -322,6 +324,17 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
+
+// Add this to your existing db/schema.ts file
+// ---------- VERIFICATION (For Better Auth) ----------
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
 
 // ---------- TYPES ----------
 export type User = typeof users.$inferSelect;

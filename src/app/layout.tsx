@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ModalProvider } from "./components/providers/modal-provider";
 import { SocketProvider } from "@/app/components/providers/SocketContext";
 import { QueryProvider } from "./components/providers/query-provider";
+import { AuthProvider } from "./auth/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,12 +42,16 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
+          <AuthProvider>
           <SocketProvider>
             <ModalProvider />
+            
             <QueryProvider>
             {children}
             </QueryProvider>
+            
           </SocketProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
